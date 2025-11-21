@@ -132,72 +132,114 @@ async function runReservation(config) {
             attemptCount++;
             addLog(`조회 시도 #${attemptCount}`);
 
-            await page.click('#search_top_tag > input');
-            await page.waitForLoadState('networkidle');
+            try {
+                // 조회 버튼 클릭
+                await page.click('#search_top_tag > input');
+                addLog('조회 버튼 클릭 완료');
 
-            // 추가 대기 시간 (서버 환경에서 느릴 수 있음)
-            await page.waitForTimeout(2000);
+                // 페이지 로딩 대기 (여러 방법 시도)
+                await Promise.race([
+                    page.waitForLoadState('networkidle', { timeout: 30000 }),
+                    page.waitForTimeout(5000) // 최소 5초 대기
+                ]);
 
-            const rowSelector = '#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr';
-            await page.waitForSelector(rowSelector, { timeout: 60000 }); // 60초로 증가
+                addLog('페이지 로딩 대기 완료');
 
-            const rows = await page.$$(rowSelector);
-            let targetRowIndex = -1;
+                // 추가 대기
+                await page.waitForTimeout(2000);
 
-            // 원하는 출발 시간의 열차 찾기
-            for (let i = 0; i < rows.length; i++) {
+                const rowSelector = '#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr';
+
+                // 테이블이 나타날 때까지 대기 (에러 처리 추가)
                 try {
-                    const row = rows[i];
-                    const departureTimeEl = await row.$('td:nth-child(4) em');
-                    if (departureTimeEl) {
-                        const departureTime = await departureTimeEl.textContent();
-                        if (departureTime && departureTime.trim() === departTime) {
-                            targetRowIndex = i;
-                            break;
-                        }
+                    await page.waitForSelector(rowSelector, { timeout: 30000 });
+                    addLog('결과 테이블 발견');
+                } catch (selectorError) {
+                    addLog('결과 테이블을 찾을 수 없음. 페이지 상태 확인 중...');
+
+                    // 현재 URL 확인
+                    const currentUrl = page.url();
+                    addLog(`현재 URL: ${currentUrl}`);
+
+                    // 페이지 스크린샷 저장 (디버깅용)
+                    try {
+                        await page.screenshot({ path: `debug_${attemptCount}.png` });
+                        addLog(`스크린샷 저장: debug_${attemptCount}.png`);
+                    } catch (e) {
+                        // 스크린샷 실패 무시
                     }
-                } catch (e) {
-                    addLog('요소 접근 중 오류, 재시도');
-                    break;
+
+                    // 재시도
+                    addLog('다시 시도합니다...');
+                    await page.waitForTimeout(3000);
+                    continue;
                 }
-            }
 
-            if (targetRowIndex !== -1) {
-                addLog(`${departTime} 출발 열차 발견`);
+                const rows = await page.$$(rowSelector);
+                addLog(`${rows.length}개의 열차 발견`);
 
-                const currentRows = await page.$$(rowSelector);
-                const targetRow = currentRows[targetRowIndex];
+                let targetRowIndex = -1;
 
-                const reserveBtn = await targetRow.$('td:nth-child(7) a');
-                const reserveText = reserveBtn ? await reserveBtn.textContent() : '';
+                // 원하는 출발 시간의 열차 찾기
+                for (let i = 0; i < rows.length; i++) {
+                    try {
+                        const row = rows[i];
+                        const departureTimeEl = await row.$('td:nth-child(4) em');
+                        if (departureTimeEl) {
+                            const departureTime = await departureTimeEl.textContent();
+                            if (departureTime && departureTime.trim() === departTime) {
+                                targetRowIndex = i;
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        addLog('요소 접근 중 오류, 재시도');
+                        break;
+                    }
+                }
 
-                if (reserveText.includes('예약하기')) {
-                    addLog('좌석 예약 가능! 예약 시도 중...');
-                    reservationJob.status = '예약 중...';
+                if (targetRowIndex !== -1) {
+                    addLog(`${departTime} 출발 열차 발견`);
 
-                    await reserveBtn.click();
+                    const currentRows = await page.$$(rowSelector);
+                    const targetRow = currentRows[targetRowIndex];
 
-                    page.on('dialog', async dialog => {
-                        addLog(`팝업: ${dialog.message()}`);
-                        await dialog.accept();
-                    });
+                    const reserveBtn = await targetRow.$('td:nth-child(7) a');
+                    const reserveText = reserveBtn ? await reserveBtn.textContent() : '';
 
-                    addLog('예약 버튼 클릭 완료');
-                    reservationJob.status = '예약 완료! 브라우저에서 결제를 완료하세요.';
+                    if (reserveText.includes('예약하기')) {
+                        addLog('좌석 예약 가능! 예약 시도 중...');
+                        reservationJob.status = '예약 중...';
 
-                    // 예약 성공 시 루프 종료하지 않고 브라우저 유지
-                    break;
-                } else if (reserveText.includes('매진')) {
-                    reservationJob.status = `매진 상태 (시도 #${attemptCount})`;
-                    addLog('매진 상태, 재시도 중...');
+                        await reserveBtn.click();
+
+                        page.on('dialog', async dialog => {
+                            addLog(`팝업: ${dialog.message()}`);
+                            await dialog.accept();
+                        });
+
+                        addLog('예약 버튼 클릭 완료');
+                        reservationJob.status = '예약 완료! 브라우저에서 결제를 완료하세요.';
+
+                        // 예약 성공 시 루프 종료하지 않고 브라우저 유지
+                        break;
+                    } else if (reserveText.includes('매진')) {
+                        reservationJob.status = `매진 상태 (시도 #${attemptCount})`;
+                        addLog('매진 상태, 재시도 중...');
+                    } else {
+                        addLog(`상태: ${reserveText}`);
+                    }
                 } else {
-                    addLog(`상태: ${reserveText}`);
+                    addLog(`${departTime} 열차를 찾을 수 없음`);
                 }
-            } else {
-                addLog(`${departTime} 열차를 찾을 수 없음`);
-            }
 
-            await page.waitForTimeout(500);
+                await page.waitForTimeout(1000);
+
+            } catch (loopError) {
+                addLog(`루프 오류: ${loopError.message}`);
+                addLog('3초 후 재시도...');
+                await page.waitForTimeout(3000);
+            }
         }
 
     } catch (e) {
