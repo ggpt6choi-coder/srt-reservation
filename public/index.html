@@ -47,16 +47,21 @@
                 </div>
 
                 <!-- 2행: 출발역, 도착역 -->
-                <div class="form-row two-cols">
-                    <div class="form-group">
-                        <label for="departure">출발역</label>
-                        <input type="text" id="departure" placeholder="예: 수서" required>
-                    </div>
+                <div class="station-row">
+                    <div class="form-row two-cols">
+                        <div class="form-group">
+                            <label for="departure">출발역</label>
+                            <input type="text" id="departure" placeholder="예: 수서" required value="수서">
+                        </div>
 
-                    <div class="form-group">
-                        <label for="arrival">도착역</label>
-                        <input type="text" id="arrival" placeholder="예: 오송" required>
+                        <div class="form-group">
+                            <label for="arrival">도착역</label>
+                            <input type="text" id="arrival" placeholder="예: 오송" required value="오송">
+                        </div>
                     </div>
+                    <button type="button" class="swap-btn" id="swapBtn" title="출발역/도착역 교환">
+                        ⇄
+                    </button>
                 </div>
 
                 <!-- 3행: 출발 날짜, 조회 시간 -->
