@@ -52,6 +52,47 @@ h1 {
     gap: 16px;
 }
 
+.station-row {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.station-row .form-row {
+    margin-bottom: 0;
+}
+
+.swap-btn {
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+    color: #667eea;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swap-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateX(-50%) rotate(180deg);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.swap-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
 label {
     display: block;
     margin-bottom: 8px;
@@ -292,5 +333,12 @@ h2 {
 
     .form-group {
         margin-bottom: 20px;
+    }
+
+    .swap-btn {
+        top: 28px;
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
     }
 }

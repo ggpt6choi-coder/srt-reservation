@@ -82,6 +82,17 @@ function sendNotification(title, body) {
     }
 }
 
+// 출발역/도착역 교환 버튼
+document.getElementById('swapBtn').addEventListener('click', () => {
+    const departureInput = document.getElementById('departure');
+    const arrivalInput = document.getElementById('arrival');
+
+    // 값 교환
+    const temp = departureInput.value;
+    departureInput.value = arrivalInput.value;
+    arrivalInput.value = temp;
+});
+
 // 폼 제출
 document.getElementById('reservationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
