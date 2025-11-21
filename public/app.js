@@ -1,6 +1,48 @@
 const API_URL = window.location.origin;
 
 let statusInterval = null;
+let deferredPrompt = null;
+
+// PWA 설치 프롬프트
+window.addEventListener('beforeinstallprompt', (e) => {
+    // 기본 설치 배너 방지
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // 이미 설치했거나 프롬프트를 거부한 적이 있으면 표시 안 함
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    const promptDismissed = localStorage.getItem('installPromptDismissed');
+
+    if (!isInstalled && !promptDismissed) {
+        // 페이지 로드 후 3초 뒤에 설치 프롬프트 표시
+        setTimeout(() => {
+            showInstallPrompt();
+        }, 3000);
+    }
+});
+
+function showInstallPrompt() {
+    if (!deferredPrompt) return;
+
+    if (confirm('바탕화면에 설치하시겠습니까?\n\n홈 화면에 추가하면 앱처럼 편리하게 사용할 수 있습니다.')) {
+        // 설치 프롬프트 표시
+        deferredPrompt.prompt();
+
+        // 사용자 선택 결과 확인
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('PWA 설치 완료');
+            } else {
+                console.log('PWA 설치 거부');
+                localStorage.setItem('installPromptDismissed', 'true');
+            }
+            deferredPrompt = null;
+        });
+    } else {
+        // 취소 누르면 다시 표시 안 함
+        localStorage.setItem('installPromptDismissed', 'true');
+    }
+}
 
 // 폼 제출
 document.getElementById('reservationForm').addEventListener('submit', async (e) => {

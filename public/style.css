@@ -43,7 +43,7 @@ h1 {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .form-row {
@@ -69,6 +69,10 @@ select {
     font-size: 1rem;
     transition: all 0.3s;
     background-color: white;
+}
+
+input[type="date"] {
+    font-family: inherit;
 }
 
 select {
