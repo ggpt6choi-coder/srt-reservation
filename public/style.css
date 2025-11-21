@@ -253,6 +253,12 @@ h2 {
     }
 
     .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    /* SRT 회원정보와 출발/도착역만 2열 유지 */
+    .form-row.two-cols {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
     }
@@ -282,5 +288,9 @@ h2 {
 
     small {
         font-size: 0.75rem;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
     }
 }
