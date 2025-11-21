@@ -233,7 +233,8 @@ async function runReservation(config) {
                     addLog(`${departTime} 열차를 찾을 수 없음`);
                 }
 
-                await page.waitForTimeout(1000);
+                // 다음 조회 전 대기 (서버 부담 감소)
+                await page.waitForTimeout(5000);
 
             } catch (loopError) {
                 addLog(`루프 오류: ${loopError.message}`);
@@ -264,7 +265,17 @@ app.post('/api/reserve', async (req, res) => {
         return res.status(400).json({ error: '이미 예약 작업이 실행 중입니다.' });
     }
 
-    const { srtId, srtPw, departure, arrival, date, time, departTime } = req.body;
+    const { appPassword, srtId, srtPw, departure, arrival, date, time, departTime } = req.body;
+
+    // 앱 비밀번호 검증
+    const correctPassword = process.env.PWD;
+    if (!correctPassword) {
+        return res.status(500).json({ error: '서버 설정 오류: PWD 환경변수가 설정되지 않았습니다.' });
+    }
+
+    if (appPassword !== correctPassword) {
+        return res.status(401).json({ error: '앱 비밀번호가 올바르지 않습니다.' });
+    }
 
     if (!srtId || !srtPw || !departure || !arrival || !date || !time || !departTime) {
         return res.status(400).json({ error: '모든 필드를 입력해주세요.' });

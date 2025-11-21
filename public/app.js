@@ -6,12 +6,17 @@ let statusInterval = null;
 document.getElementById('reservationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    // 날짜를 YYYYMMDD 형식으로 변환
+    const dateInput = document.getElementById('date').value; // YYYY-MM-DD
+    const dateFormatted = dateInput.replace(/-/g, ''); // YYYYMMDD
+
     const formData = {
+        appPassword: document.getElementById('appPassword').value,
         srtId: document.getElementById('srtId').value,
         srtPw: document.getElementById('srtPw').value,
         departure: document.getElementById('departure').value,
         arrival: document.getElementById('arrival').value,
-        date: document.getElementById('date').value,
+        date: dateFormatted,
         time: document.getElementById('time').value,
         departTime: document.getElementById('departTime').value
     };

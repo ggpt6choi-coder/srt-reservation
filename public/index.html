@@ -17,16 +17,27 @@
 
         <div class="card">
             <form id="reservationForm">
+                <!-- 앱 비밀번호 -->
                 <div class="form-group">
-                    <label for="srtId">SRT 회원번호</label>
-                    <input type="text" id="srtId" placeholder="회원번호 입력" required>
+                    <label for="appPassword">앱 비밀번호</label>
+                    <input type="password" id="appPassword" placeholder="앱 비밀번호 입력" required>
+                    <small>이 앱을 사용하기 위한 비밀번호입니다</small>
                 </div>
 
-                <div class="form-group">
-                    <label for="srtPw">비밀번호</label>
-                    <input type="password" id="srtPw" placeholder="비밀번호 입력" required>
+                <!-- 1행: SRT 회원번호, 비밀번호 -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="srtId">회원번호</label>
+                        <input type="text" id="srtId" placeholder="회원번호 입력" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="srtPw">비밀번호</label>
+                        <input type="password" id="srtPw" placeholder="비밀번호 입력" required>
+                    </div>
                 </div>
 
+                <!-- 2행: 출발역, 도착역 -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="departure">출발역</label>
@@ -39,18 +50,46 @@
                     </div>
                 </div>
 
+                <!-- 3행: 출발 날짜, 조회 시간 -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="date">출발 날짜</label>
-                        <input type="text" id="date" placeholder="YYYYMMDD (예: 20251220)" required>
+                        <input type="date" id="date" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="time">원하는 출발 시간대</label>
-                        <input type="text" id="time" placeholder="HH (예: 10)" required>
+                        <label for="time">출발 시간대</label>
+                        <select id="time" required>
+                            <option value="">시간 선택</option>
+                            <option value="00">00시</option>
+                            <option value="01">01시</option>
+                            <option value="02">02시</option>
+                            <option value="03">03시</option>
+                            <option value="04">04시</option>
+                            <option value="05">05시</option>
+                            <option value="06">06시</option>
+                            <option value="07">07시</option>
+                            <option value="08">08시</option>
+                            <option value="09">09시</option>
+                            <option value="10">10시</option>
+                            <option value="11">11시</option>
+                            <option value="12">12시</option>
+                            <option value="13">13시</option>
+                            <option value="14">14시</option>
+                            <option value="15">15시</option>
+                            <option value="16">16시</option>
+                            <option value="17">17시</option>
+                            <option value="18">18시</option>
+                            <option value="19">19시</option>
+                            <option value="20">20시</option>
+                            <option value="21">21시</option>
+                            <option value="22">22시</option>
+                            <option value="23">23시</option>
+                        </select>
                     </div>
                 </div>
 
+                <!-- 4행: 원하는 출발 시간 -->
                 <div class="form-group">
                     <label for="departTime">원하는 출발 시간</label>
                     <input type="text" id="departTime" placeholder="HH:MM (예: 10:20)" required>
