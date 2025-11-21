@@ -268,11 +268,11 @@ app.post('/api/reserve', async (req, res) => {
     const { appPassword, srtId, srtPw, departure, arrival, date, time, departTime } = req.body;
 
     // 앱 비밀번호 검증
-    const correctPassword = process.env.APP_PASSWORD;
+    const correctPassword = "5392";
 
-    if (!correctPassword) {
-        return res.status(500).json({ error: '서버 설정 오류: APP_PASSWORD 환경변수가 설정되지 않았습니다.' });
-    }
+    // if (!correctPassword) {
+    //     return res.status(500).json({ error: '서버 설정 오류: APP_PASSWORD 환경변수가 설정되지 않았습니다.' });
+    // }
 
     if (appPassword !== correctPassword) {
         return res.status(401).json({
