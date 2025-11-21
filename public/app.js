@@ -44,6 +44,44 @@ function showInstallPrompt() {
     }
 }
 
+// Service Worker 등록 및 알림 권한 요청
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker 등록 완료:', registration);
+
+                // 알림 권한 요청
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            console.log('알림 권한 허용됨');
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Service Worker 등록 실패:', error);
+            });
+    });
+}
+
+// 알림 전송 함수
+function sendNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, {
+                body: body,
+                icon: '/icon-192.png',
+                badge: '/icon-192.png',
+                vibrate: [200, 100, 200],
+                tag: 'srt-notification',
+                requireInteraction: true
+            });
+        });
+    }
+}
+
 // 폼 제출
 document.getElementById('reservationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -150,8 +188,12 @@ function updateStatus(data) {
         statusClass = 'status-running';
     } else if (data.status.includes('완료')) {
         statusClass = 'status-success';
+        // 예약 완료 시 알림 전송
+        sendNotification('🎉 SRT 예약 완료!', '예약이 성공했습니다. 결제를 완료해주세요.');
     } else if (data.status.includes('오류')) {
         statusClass = 'status-error';
+        // 오류 발생 시 알림
+        sendNotification('⚠️ SRT 예약 오류', '예약 중 오류가 발생했습니다.');
     }
 
     statusDiv.innerHTML = `<div class="status-badge ${statusClass}">${data.status}</div>`;
