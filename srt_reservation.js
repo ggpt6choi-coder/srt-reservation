@@ -7,7 +7,7 @@ const selectAllKey = isMac ? 'Meta+A' : 'Control+A';
 
 async function run() {
     // 환경변수로 headless 모드 제어 (CI 환경에서는 true)
-    const isHeadless = process.env.HEADLESS === 'true';
+    const isHeadless = true;
 
     const browser = await chromium.launch({ headless: isHeadless });
     // 화면녹화 (필요시 주석 해제)

@@ -48,12 +48,15 @@ async function runReservation(config) {
         reservationJob.status = '브라우저 시작 중...';
         addLog('예약 프로세스 시작');
 
-        const isHeadless = process.env.HEADLESS === 'true';
+        const isHeadless = true;
         reservationJob.browser = await chromium.launch({ headless: isHeadless });
         reservationJob.context = await reservationJob.browser.newContext();
         reservationJob.page = await reservationJob.context.newPage();
 
         const page = reservationJob.page;
+
+        // 기본 타임아웃 60초로 설정
+        page.setDefaultTimeout(60000);
 
         // 1. 로그인
         reservationJob.status = '로그인 중...';
@@ -132,8 +135,11 @@ async function runReservation(config) {
             await page.click('#search_top_tag > input');
             await page.waitForLoadState('networkidle');
 
+            // 추가 대기 시간 (서버 환경에서 느릴 수 있음)
+            await page.waitForTimeout(2000);
+
             const rowSelector = '#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr';
-            await page.waitForSelector(rowSelector);
+            await page.waitForSelector(rowSelector, { timeout: 60000 }); // 60초로 증가
 
             const rows = await page.$$(rowSelector);
             let targetRowIndex = -1;
