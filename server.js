@@ -269,12 +269,23 @@ app.post('/api/reserve', async (req, res) => {
 
     // 앱 비밀번호 검증
     const correctPassword = process.env.PWD;
+
+    // 디버깅 로그
+    console.log('입력된 비밀번호:', appPassword);
+    console.log('입력된 비밀번호 길이:', appPassword?.length);
+    console.log('정답 비밀번호:', correctPassword);
+    console.log('정답 비밀번호 길이:', correctPassword?.length);
+    console.log('비교 결과:', appPassword === correctPassword);
+
     if (!correctPassword) {
         return res.status(500).json({ error: '서버 설정 오류: PWD 환경변수가 설정되지 않았습니다.' });
     }
 
     if (appPassword !== correctPassword) {
-        return res.status(401).json({ error: '앱 비밀번호가 올바르지 않습니다.' });
+        return res.status(401).json({
+            error: '앱 비밀번호가 올바르지 않습니다.',
+            debug: `입력: "${appPassword}" (길이: ${appPassword?.length}), 정답: "${correctPassword}" (길이: ${correctPassword?.length})`
+        });
     }
 
     if (!srtId || !srtPw || !departure || !arrival || !date || !time || !departTime) {
