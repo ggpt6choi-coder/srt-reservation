@@ -219,9 +219,24 @@ async function runReservation(config) {
                         });
 
                         addLog('예약 버튼 클릭 완료');
-                        reservationJob.status = '예약 완료! 브라우저에서 결제를 완료하세요.';
+                        addLog('예약이 완료되었습니다! SRT 앱에서 결제를 완료해주세요.');
+                        reservationJob.status = '예약 완료! SRT 앱에서 결제를 완료하세요.';
 
-                        // 예약 성공 시 루프 종료하지 않고 브라우저 유지
+                        // 예약 완료 후 브라우저 종료
+                        reservationJob.isRunning = false;
+
+                        // 잠시 대기 후 브라우저 종료
+                        await page.waitForTimeout(2000);
+
+                        try {
+                            if (reservationJob.page) await reservationJob.page.close();
+                            if (reservationJob.context) await reservationJob.context.close();
+                            if (reservationJob.browser) await reservationJob.browser.close();
+                            addLog('브라우저 종료 완료');
+                        } catch (closeError) {
+                            addLog('브라우저 종료 중 오류: ' + closeError.message);
+                        }
+
                         break;
                     } else if (reserveText.includes('매진')) {
                         reservationJob.status = `매진 상태 (시도 #${attemptCount})`;
