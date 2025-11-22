@@ -64,7 +64,7 @@
                     </button>
                 </div>
 
-                <!-- 3행: 출발 날짜, 조회 시간 -->
+                <!-- 3행: 출발 날짜, 원하는 출발 시간 -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="date">출발 날짜</label>
@@ -72,42 +72,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="time">출발 시간대</label>
-                        <select id="time" required>
-                            <option value="">시간 선택</option>
-                            <option value="00">00시</option>
-                            <option value="01">01시</option>
-                            <option value="02">02시</option>
-                            <option value="03">03시</option>
-                            <option value="04">04시</option>
-                            <option value="05">05시</option>
-                            <option value="06">06시</option>
-                            <option value="07">07시</option>
-                            <option value="08">08시</option>
-                            <option value="09">09시</option>
-                            <option value="10">10시</option>
-                            <option value="11">11시</option>
-                            <option value="12">12시</option>
-                            <option value="13">13시</option>
-                            <option value="14">14시</option>
-                            <option value="15">15시</option>
-                            <option value="16">16시</option>
-                            <option value="17">17시</option>
-                            <option value="18">18시</option>
-                            <option value="19">19시</option>
-                            <option value="20">20시</option>
-                            <option value="21">21시</option>
-                            <option value="22">22시</option>
-                            <option value="23">23시</option>
-                        </select>
+                        <label for="departTime">원하는 출발 시간</label>
+                        <input type="text" id="departTime" placeholder="HH:MM (예: 10:20)" required>
+                        <small>이 시간의 열차가 예약 가능할 때까지 자동으로 조회합니다</small>
                     </div>
-                </div>
-
-                <!-- 4행: 원하는 출발 시간 -->
-                <div class="form-group">
-                    <label for="departTime">원하는 출발 시간(포맷 맞추기)</label>
-                    <input type="text" id="departTime" placeholder="HH:MM (예: 10:20)" required>
-                    <small>이 시간의 열차가 예약 가능할 때까지 자동으로 조회합니다</small>
                 </div>
 
                 <div class="button-group">
