@@ -38,7 +38,7 @@ COPY . .
 # 포트 설정
 EXPOSE 3000
 
-# 환경변수 설정
+# 환경변수 설정 (Railway에서 자동 주입)
 ENV HEADLESS=true
 
 # 서버 시작
