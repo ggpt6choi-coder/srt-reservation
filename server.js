@@ -3,14 +3,19 @@ const cors = require('cors');
 const path = require('path');
 const { chromium } = require('playwright');
 
-// 로컬 개발 시에만 dotenv 사용 (Railway에서는 사용 안 함)
-if (process.env.NODE_ENV !== 'production' && !process.env.RAILWAY_ENVIRONMENT) {
+// Railway 환경 감지 (RAILWAY_STATIC_URL은 Railway에서 자동 설정됨)
+const isRailway = process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT;
+
+// 로컬 개발 시에만 dotenv 사용
+if (!isRailway) {
     try {
         require('dotenv').config();
         console.log('✅ .env 파일 로드됨 (로컬 개발 모드)');
     } catch (e) {
-        console.log('⚠️ .env 파일 없음 (Railway 환경변수 사용)');
+        console.log('⚠️ .env 파일 없음');
     }
+} else {
+    console.log('🚂 Railway 환경 감지 - 환경변수 직접 사용');
 }
 
 const app = express();
@@ -18,7 +23,10 @@ const PORT = process.env.PORT || 3000;
 
 // 디버깅: 모든 환경변수 확인
 console.log('=== 환경변수 디버깅 ===');
-console.log('RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+console.log('Railway 환경:', !!isRailway);
+console.log('RAILWAY_STATIC_URL:', process.env.RAILWAY_STATIC_URL ? '설정됨' : '없음');
+console.log('RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT ? '설정됨' : '없음');
+console.log('NODE_ENV:', process.env.NODE_ENV || '없음');
 console.log('모든 TELEGRAM 관련 환경변수:');
 Object.keys(process.env).forEach(key => {
     if (key.includes('TELEGRAM')) {
