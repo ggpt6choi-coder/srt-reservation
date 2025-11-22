@@ -2,10 +2,30 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { chromium } = require('playwright');
-require('dotenv').config();
+
+// 로컬 개발 시에만 dotenv 사용 (Railway에서는 사용 안 함)
+if (process.env.NODE_ENV !== 'production' && !process.env.RAILWAY_ENVIRONMENT) {
+    try {
+        require('dotenv').config();
+        console.log('✅ .env 파일 로드됨 (로컬 개발 모드)');
+    } catch (e) {
+        console.log('⚠️ .env 파일 없음 (Railway 환경변수 사용)');
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// 디버깅: 모든 환경변수 확인
+console.log('=== 환경변수 디버깅 ===');
+console.log('RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+console.log('모든 TELEGRAM 관련 환경변수:');
+Object.keys(process.env).forEach(key => {
+    if (key.includes('TELEGRAM')) {
+        console.log(`  ${key}: ${process.env[key] ? '설정됨' : '없음'}`);
+    }
+});
+console.log('======================');
 
 // 미들웨어
 app.use(cors());
@@ -43,18 +63,19 @@ function addLog(message) {
 
 // 텔레그램 메시지 전송 함수
 async function sendTelegramMessage(message) {
-    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
     // 디버깅: 환경변수 확인
     console.log('=== 텔레그램 환경변수 확인 ===');
-    console.log('TELEGRAM_BOT_TOKEN 존재:', !!process.env.TELEGRAM_BOT_TOKEN);
-    console.log('TELEGRAM_CHAT_ID 존재:', !!process.env.TELEGRAM_CHAT_ID);
-    console.log('BOT_TOKEN 길이:', TELEGRAM_BOT_TOKEN.length);
-    console.log('CHAT_ID 길이:', TELEGRAM_CHAT_ID.length);
+    console.log('TELEGRAM_BOT_TOKEN 존재:', !!TELEGRAM_BOT_TOKEN);
+    console.log('TELEGRAM_CHAT_ID 존재:', !!TELEGRAM_CHAT_ID);
+    if (TELEGRAM_BOT_TOKEN) console.log('BOT_TOKEN 길이:', TELEGRAM_BOT_TOKEN.length);
+    if (TELEGRAM_CHAT_ID) console.log('CHAT_ID 길이:', TELEGRAM_CHAT_ID.length);
 
-    if (TELEGRAM_BOT_TOKEN === '' || TELEGRAM_CHAT_ID === '') {
-        console.log(`텔레그램 메시지 전송 실패: 텔레그램 설정이 올바르지 않습니다.`);
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+        console.log('❌ 텔레그램 환경변수가 설정되지 않았습니다.');
+        console.log('Railway Variables에서 TELEGRAM_BOT_TOKEN과 TELEGRAM_CHAT_ID를 설정해주세요.');
         return;
     }
 
@@ -111,10 +132,23 @@ async function runReservation(config) {
         await page.click('.loginSubmit');
 
         try {
-            await page.waitForSelector('text=로그아웃', { timeout: 5000 });
+            await page.waitForSelector('text=로그아웃', { timeout: 10000 });
             addLog('로그인 성공');
         } catch (e) {
-            addLog('로그인 확인 시간 초과');
+            addLog('❌ 로그인 실패: 회원번호 또는 비밀번호를 확인해주세요.');
+            reservationJob.status = '로그인 실패';
+
+            // 텔레그램 알림 전송
+            await sendTelegramMessage(
+                `❌ <b>SRT 로그인 실패</b>\n\n` +
+                `회원번호 또는 비밀번호를 확인해주세요.\n\n` +
+                `예약이 중단되었습니다.`
+            );
+
+            // 브라우저 종료
+            reservationJob.isRunning = false;
+            if (reservationJob.browser) await reservationJob.browser.close();
+            return;
         }
 
         // 2. 열차 조회 페이지
