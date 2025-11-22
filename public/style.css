@@ -114,6 +114,16 @@ select {
 
 input[type="date"] {
     font-family: inherit;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    position: relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
 }
 
 select {
@@ -316,6 +326,12 @@ h2 {
     select {
         font-size: 16px;
         padding: 10px 12px;
+    }
+
+    input[type="date"] {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     select {

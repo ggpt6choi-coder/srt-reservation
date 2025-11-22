@@ -29,14 +29,16 @@ const selectAllKey = isMac ? 'Meta+A' : 'Control+A';
 // 로그 추가 함수
 function addLog(message) {
     const timestamp = new Date().toLocaleString('ko-KR');
-    const logEntry = `[${timestamp}] ${message}`;
+    const logEntry = {
+        timestamp: Date.now(),
+        message: `[${timestamp}]\n${message}`
+    };
     reservationJob.logs.push(logEntry);
-    console.log(logEntry);
+    console.log(logEntry.message);
 
-    // 최대 100개 로그만 유지
-    if (reservationJob.logs.length > 100) {
-        reservationJob.logs.shift();
-    }
+    // 최근 1시간 로그만 유지
+    const oneHourAgo = Date.now() - 3600000; // 1시간 = 3600000ms
+    reservationJob.logs = reservationJob.logs.filter(log => log.timestamp > oneHourAgo);
 }
 
 // 예약 실행 함수
@@ -161,12 +163,15 @@ async function runReservation(config) {
                     const currentUrl = page.url();
                     addLog(`현재 URL: ${currentUrl}`);
 
-                    // 페이지 스크린샷 저장 (디버깅용)
+                    // 페이지 HTML 일부 로그 (디버깅용)
                     try {
-                        await page.screenshot({ path: `debug_${attemptCount}.png` });
-                        addLog(`스크린샷 저장: debug_${attemptCount}.png`);
+                        const bodyHTML = await page.evaluate(() => {
+                            const body = document.body.innerHTML;
+                            return body.substring(0, 1000); // 처음 1000자만
+                        });
+                        addLog(`페이지 내용 (일부): ${bodyHTML}`);
                     } catch (e) {
-                        // 스크린샷 실패 무시
+                        addLog('페이지 내용 가져오기 실패');
                     }
 
                     // 재시도
@@ -218,9 +223,8 @@ async function runReservation(config) {
                             await dialog.accept();
                         });
 
-                        addLog('예약 버튼 클릭 완료');
-                        addLog('예약이 완료되었습니다! SRT 앱에서 결제를 완료해주세요.');
-                        reservationJob.status = '예약 완료! SRT 앱에서 결제를 완료하세요.';
+                        addLog('🥳예약이 완료! SRT 앱에서 결제를 완료해주세요.');
+                        reservationJob.status = '🥳예약 완료! SRT 앱에서 결제를 완료하세요.';
 
                         // 예약 완료 후 브라우저 종료
                         reservationJob.isRunning = false;
@@ -262,11 +266,13 @@ async function runReservation(config) {
         addLog('오류 발생: ' + e.message);
         reservationJob.status = '오류 발생: ' + e.message;
 
+        // 페이지 상태 로그
         if (reservationJob.page) {
             try {
-                await reservationJob.page.screenshot({ path: 'error.png' });
+                const currentUrl = await reservationJob.page.url();
+                addLog(`오류 발생 시 URL: ${currentUrl}`);
             } catch (err) {
-                // 스크린샷 실패 무시
+                // URL 가져오기 실패 무시
             }
         }
     }
@@ -313,7 +319,7 @@ app.get('/api/status', (req, res) => {
     res.json({
         isRunning: reservationJob.isRunning,
         status: reservationJob.status,
-        logs: reservationJob.logs
+        logs: reservationJob.logs.map(log => log.message) // 메시지만 추출
     });
 });
 
