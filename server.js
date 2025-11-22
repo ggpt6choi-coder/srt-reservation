@@ -41,6 +41,40 @@ function addLog(message) {
     reservationJob.logs = reservationJob.logs.filter(log => log.timestamp > oneHourAgo);
 }
 
+// 텔레그램 메시지 전송 함수
+async function sendTelegramMessage(message) {
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+
+    if (TELEGRAM_BOT_TOKEN === '' || TELEGRAM_CHAT_ID === '') {
+        console.log(`텔레그램 메시지 전송 실패: 텔레그램 설정이 올바르지 않습니다. TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}, TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID} `);
+        return;
+    }
+
+    try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+
+        if (response.ok) {
+            console.log('텔레그램 메시지 전송 성공');
+        } else {
+            console.log('텔레그램 메시지 전송 실패:', await response.text());
+        }
+    } catch (error) {
+        console.log('텔레그램 전송 오류:', error.message);
+    }
+}
+
 // 예약 실행 함수
 async function runReservation(config) {
     const { srtId, srtPw, departure, arrival, date, time, departTime } = config;
@@ -226,6 +260,15 @@ async function runReservation(config) {
                         addLog('🥳예약이 완료! SRT 앱에서 결제를 완료해주세요.');
                         reservationJob.status = '🥳예약 완료! SRT 앱에서 결제를 완료하세요.';
 
+                        // 텔레그램 알림 전송
+                        await sendTelegramMessage(
+                            `🎉 <b>SRT 예약 완료!</b>\n\n` +
+                            `출발: ${departure} → ${arrival}\n` +
+                            `날짜: ${date}\n` +
+                            `시간: ${departTime}\n\n` +
+                            `SRT 앱에서 결제를 완료해주세요! 💳`
+                        );
+
                         // 예약 완료 후 브라우저 종료
                         reservationJob.isRunning = false;
 
@@ -261,10 +304,16 @@ async function runReservation(config) {
                 await page.waitForTimeout(3000);
             }
         }
-
     } catch (e) {
         addLog('오류 발생: ' + e.message);
         reservationJob.status = '오류 발생: ' + e.message;
+
+        // 텔레그램 알림 전송
+        await sendTelegramMessage(
+            `⚠️ <b>SRT 예약 오류</b>\n\n` +
+            `오류 메시지: ${e.message}\n\n` +
+            `다시 시도해주세요.`
+        );
 
         // 페이지 상태 로그
         if (reservationJob.page) {
