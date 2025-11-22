@@ -120,7 +120,7 @@ async function runReservation(config) {
         reservationJob.status = '브라우저 시작 중...';
         addLog('예약 프로세스 시작');
 
-        const isHeadless = true;
+        const isHeadless = false;
         reservationJob.browser = await chromium.launch({ headless: isHeadless });
         reservationJob.context = await reservationJob.browser.newContext();
         reservationJob.page = await reservationJob.context.newPage();
@@ -261,17 +261,6 @@ async function runReservation(config) {
                     const currentUrl = page.url();
                     addLog(`현재 URL: ${currentUrl}`);
 
-                    // 페이지 HTML 일부 로그 (디버깅용)
-                    try {
-                        const bodyHTML = await page.evaluate(() => {
-                            const body = document.body.innerHTML;
-                            return body.substring(0, 1000); // 처음 1000자만
-                        });
-                        addLog(`페이지 내용 (일부): ${bodyHTML}`);
-                    } catch (e) {
-                        addLog('페이지 내용 가져오기 실패');
-                    }
-
                     // 재시도
                     addLog('다시 시도합니다...');
                     await page.waitForTimeout(3000);
@@ -284,14 +273,17 @@ async function runReservation(config) {
                 let targetRowIndex = -1;
 
                 // 원하는 출발 시간의 열차 찾기
+                addLog(`찾는 시간: "${departTime}"`);
                 for (let i = 0; i < rows.length; i++) {
                     try {
                         const row = rows[i];
                         const departureTimeEl = await row.$('td:nth-child(4) em');
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
+                            addLog(`열차 #${i + 1} 출발시간: "${departureTime ? departureTime.trim() : 'null'}"`);
                             if (departureTime && departureTime.trim() === departTime) {
                                 targetRowIndex = i;
+                                addLog(`✅ 매칭 성공! 열차 #${i + 1}`);
                                 break;
                             }
                         }
