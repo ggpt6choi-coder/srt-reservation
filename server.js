@@ -56,7 +56,17 @@ const selectAllKey = isMac ? 'Meta+A' : 'Control+A';
 
 // 로그 추가 함수
 function addLog(message) {
-    const timestamp = new Date().toLocaleString('ko-KR');
+    // 한국 시간(KST, UTC+9)으로 표시
+    const timestamp = new Date().toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
     const logEntry = {
         timestamp: Date.now(),
         message: `[${timestamp}]\n${message}`
@@ -210,7 +220,7 @@ async function runReservation(config) {
         }
 
         // 시간 선택
-        addLog(`시간 선택: ${time}`);
+        addLog(`시간대 선택: ${time}`);
         const hour = time.substring(0, 2);
         const timeValue = `${hour}0000`;
 
@@ -225,6 +235,7 @@ async function runReservation(config) {
         }
 
         // 3. 예약 반복 루프
+        addLog(`${departTime} 열차 검색`);
         reservationJob.status = `${departTime} 열차 검색 중...`;
         let attemptCount = 0;
 
