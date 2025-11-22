@@ -38,8 +38,8 @@ COPY . .
 # 포트 설정
 EXPOSE 3000
 
-# 환경변수 설정 (Railway에서 자동 주입)
-ENV HEADLESS=true
+# 환경변수는 Railway에서 런타임에 자동 주입됨
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, APP_PASSWORD 등
 
 # 서버 시작
 CMD ["npm", "start"]
