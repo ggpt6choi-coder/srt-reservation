@@ -131,10 +131,32 @@ async function runReservation(config) {
         await page.fill('#hmpgPwdCphd01', srtPw);
         await page.click('.loginSubmit');
 
+        // 2. 열차 조회 페이지
+        reservationJob.status = '조회 페이지 이동 중...';
+        addLog('조회 페이지로 이동');
+        await page.goto('https://etk.srail.kr/hpg/hra/01/selectScheduleList.do?pageId=TK0101010000');
+        await page.waitForTimeout(2000); // 페이지 로딩 대기
+        addLog('조회 페이지 로딩 완료');
+
         try {
-            await page.waitForSelector('text=로그아웃', { timeout: 10000 });
-            addLog('로그인 성공');
+            addLog('로그인 상태 확인 중...');
+
+            // 모든 a 태그의 텍스트 확인
+            const headerSelector = '#wrap > div.header.header-e > div.global.clear > div';
+            const linkTexts = await page.$$eval(`${headerSelector} a`, links =>
+                links.map(link => link.innerText.trim())
+            );
+
+            addLog(`헤더 링크 텍스트: ${JSON.stringify(linkTexts)}`);
+
+            // '로그인' 텍스트가 있으면 로그인 실패
+            if (linkTexts.some(text => text.includes('로그인'))) {
+                throw new Error('로그인 실패 - 로그인 버튼이 여전히 존재함');
+            }
+
+            addLog('✅ 로그인 성공');
         } catch (e) {
+            addLog(`❌ 로그인 확인 오류: ${e.message}`);
             addLog('❌ 로그인 실패: 회원번호 또는 비밀번호를 확인해주세요.');
             reservationJob.status = '로그인 실패';
 
@@ -150,12 +172,6 @@ async function runReservation(config) {
             if (reservationJob.browser) await reservationJob.browser.close();
             return;
         }
-
-        // 2. 열차 조회 페이지
-        reservationJob.status = '조회 페이지 이동 중...';
-        addLog('조회 페이지로 이동');
-        await page.goto('https://etk.srail.kr/hpg/hra/01/selectScheduleList.do?pageId=TK0101010000');
-        await page.waitForLoadState('networkidle');
 
         // 출발역 선택
         addLog(`출발역 선택: ${departure}`);
