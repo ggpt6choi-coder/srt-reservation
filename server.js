@@ -120,7 +120,7 @@ async function runReservation(config) {
         reservationJob.status = '브라우저 시작 중...';
         addLog('예약 프로세스 시작');
 
-        const isHeadless = false;
+        const isHeadless = true;
         reservationJob.browser = await chromium.launch({ headless: isHeadless });
         reservationJob.context = await reservationJob.browser.newContext();
         reservationJob.page = await reservationJob.context.newPage();
