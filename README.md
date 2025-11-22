@@ -30,9 +30,36 @@ npm start
 4. 저장소 선택 및 배포
 5. 생성된 URL로 접속
 
+### Railway 환경변수 설정 (중요!)
+
+Railway에서 환경변수를 설정하려면 **Railway CLI**를 사용해야 합니다:
+
+```bash
+# 1. Railway CLI 설치
+brew install railway
+
+# 2. Railway 로그인
+railway login
+
+# 3. 프로젝트 연결
+railway link
+
+# 4. 환경변수 설정 (핵심!)
+railway variables --set "TELEGRAM_BOT_TOKEN=your_token" \
+                  --set "TELEGRAM_CHAT_ID=your_chat_id" \
+                  --set "APP_PASSWORD=your_password"
+```
+
+> **참고**: Railway Dashboard UI에서 Variables를 설정해도 Docker 컨테이너에 제대로 주입되지 않을 수 있습니다. Railway CLI를 사용하는 것이 가장 확실합니다.
+
 ## 환경 변수
 
-Railway 배포 시 자동으로 `HEADLESS=true`가 설정됩니다.
+Railway 배포 시 다음 환경변수를 설정해야 합니다:
+
+- `TELEGRAM_BOT_TOKEN`: 텔레그램 봇 토큰 (예약 알림용)
+- `TELEGRAM_CHAT_ID`: 텔레그램 채팅 ID
+- `APP_PASSWORD`: 웹 UI 접근 비밀번호
+- `HEADLESS`: 자동으로 `true`로 설정됨
 
 ## 사용 방법
 

@@ -63,6 +63,29 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
     const dateInput = document.getElementById('date').value; // YYYY-MM-DD
     const dateFormatted = dateInput.replace(/-/g, ''); // YYYYMMDD
 
+    // 원하는 출발 시간 파싱 및 검증
+    const departTimeInput = document.getElementById('departTime').value.trim();
+
+    // HH:MM 형식 검증 및 파싱
+    const timeMatch = departTimeInput.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (!timeMatch) {
+        alert('출발 시간 형식이 올바르지 않습니다.\nHH:MM 형식으로 입력해주세요. (예: 10:20)');
+        return;
+    }
+
+    // 시간과 분 추출 및 두 자리로 패딩
+    let hour = timeMatch[1].padStart(2, '0');
+    let minute = timeMatch[2].padStart(2, '0');
+
+    // 유효성 검증
+    if (parseInt(hour) > 23 || parseInt(minute) > 59) {
+        alert('올바른 시간을 입력해주세요.\n시간: 00-23, 분: 00-59');
+        return;
+    }
+
+    const departTime = `${hour}:${minute}`;
+    const time = hour; // 시간대 (출발 시간대)
+
     const formData = {
         appPassword: document.getElementById('appPassword').value,
         srtId: document.getElementById('srtId').value,
@@ -70,8 +93,8 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
         departure: document.getElementById('departure').value,
         arrival: document.getElementById('arrival').value,
         date: dateFormatted,
-        time: document.getElementById('time').value,
-        departTime: document.getElementById('departTime').value
+        time: time, // 시간대 (HH)
+        departTime: departTime // 원하는 출발 시간 (HH:MM)
     };
 
     try {

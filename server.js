@@ -164,7 +164,6 @@ async function runReservation(config) {
 
             addLog('✅ 로그인 성공');
         } catch (e) {
-            addLog(`❌ 로그인 확인 오류: ${e.message}`);
             addLog('❌ 로그인 실패: 회원번호 또는 비밀번호를 확인해주세요.');
             reservationJob.status = '로그인 실패';
 
