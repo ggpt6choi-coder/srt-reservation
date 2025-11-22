@@ -23,8 +23,8 @@ aptPkgs = [
 
 [phases.install]
 cmds = [
-    "npm install",
-    "npx playwright install chromium"
+    "npm install --legacy-peer-deps",
+    "npx playwright install chromium --with-deps"
 ]
 
 [start]
