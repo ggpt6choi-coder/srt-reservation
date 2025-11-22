@@ -46,8 +46,15 @@ async function sendTelegramMessage(message) {
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
+    // 디버깅: 환경변수 확인
+    console.log('=== 텔레그램 환경변수 확인 ===');
+    console.log('TELEGRAM_BOT_TOKEN 존재:', !!process.env.TELEGRAM_BOT_TOKEN);
+    console.log('TELEGRAM_CHAT_ID 존재:', !!process.env.TELEGRAM_CHAT_ID);
+    console.log('BOT_TOKEN 길이:', TELEGRAM_BOT_TOKEN.length);
+    console.log('CHAT_ID 길이:', TELEGRAM_CHAT_ID.length);
+
     if (TELEGRAM_BOT_TOKEN === '' || TELEGRAM_CHAT_ID === '') {
-        console.log(`텔레그램 메시지 전송 실패: 텔레그램 설정이 올바르지 않습니다. TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}, TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID} `);
+        console.log(`텔레그램 메시지 전송 실패: 텔레그램 설정이 올바르지 않습니다.`);
         return;
     }
 
