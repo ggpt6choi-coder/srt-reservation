@@ -2,7 +2,6 @@ const API_URL = window.location.origin;
 
 let statusInterval = null;
 let deferredPrompt = null;
-let notificationSent = false; // 알림 전송 플래그
 
 // PWA 설치 프롬프트
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -42,44 +41,6 @@ function showInstallPrompt() {
     } else {
         // 취소 누르면 다시 표시 안 함
         localStorage.setItem('installPromptDismissed', 'true');
-    }
-}
-
-// Service Worker 등록 및 알림 권한 요청
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('Service Worker 등록 완료:', registration);
-
-                // 알림 권한 요청
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            console.log('알림 권한 허용됨');
-                        }
-                    });
-                }
-            })
-            .catch(error => {
-                console.log('Service Worker 등록 실패:', error);
-            });
-    });
-}
-
-// 알림 전송 함수
-function sendNotification(title, body) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(title, {
-                body: body,
-                icon: '/icon-192.png',
-                badge: '/icon-192.png',
-                vibrate: [200, 100, 200],
-                tag: 'srt-notification',
-                requireInteraction: true
-            });
-        });
     }
 }
 
@@ -198,21 +159,10 @@ function updateStatus(data) {
     let statusClass = 'status-idle';
     if (data.isRunning) {
         statusClass = 'status-running';
-        notificationSent = false; // 실행 중일 때 플래그 리셋
     } else if (data.status.includes('완료')) {
         statusClass = 'status-success';
-        // 예약 완료 시 알림 전송 (한 번만)
-        if (!notificationSent) {
-            sendNotification('🎉 SRT 예약 완료!', '예약이 성공했습니다. 결제를 완료해주세요.');
-            notificationSent = true;
-        }
     } else if (data.status.includes('오류')) {
         statusClass = 'status-error';
-        // 오류 발생 시 알림 (한 번만)
-        if (!notificationSent) {
-            sendNotification('⚠️ SRT 예약 오류', '예약 중 오류가 발생했습니다.');
-            notificationSent = true;
-        }
     }
 
     statusDiv.innerHTML = `<div class="status-badge ${statusClass}">${data.status}</div>`;
