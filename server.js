@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { chromium } = require('playwright');
+const webPush = require('web-push');
 
 // Railway 환경 감지 (RAILWAY_STATIC_URL은 Railway에서 자동 설정됨)
 const isRailway = process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT;
@@ -34,6 +35,45 @@ Object.keys(process.env).forEach(key => {
     }
 });
 console.log('======================');
+
+// Web Push 설정
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:test@test.com';
+
+if (publicVapidKey && privateVapidKey) {
+    webPush.setVapidDetails(vapidSubject, publicVapidKey, privateVapidKey);
+    console.log('✅ Web Push 설정 완료');
+} else {
+    console.log('⚠️ Web Push 키가 설정되지 않았습니다.');
+}
+
+// 푸시 구독 저장소 (메모리)
+let pushSubscriptions = [];
+
+// 푸시 알림 전송 함수
+async function sendPushNotification(title, body) {
+    if (pushSubscriptions.length === 0) return;
+
+    const notificationPayload = JSON.stringify({ title, body });
+    const promises = [];
+
+    pushSubscriptions.forEach((subscription, index) => {
+        promises.push(
+            webPush.sendNotification(subscription, notificationPayload)
+                .catch(err => {
+                    console.error('푸시 전송 실패:', err);
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        // 만료된 구독 제거
+                        pushSubscriptions.splice(index, 1);
+                    }
+                })
+        );
+    });
+
+    await Promise.all(promises);
+    console.log(`📢 푸시 알림 전송 완료: ${title}`);
+}
 
 // 미들웨어
 app.use(cors());
@@ -336,6 +376,12 @@ async function runReservation(config) {
                             `SRT 앱에서 결제를 완료해주세요! 💳`
                         );
 
+                        // 푸시 알림 전송
+                        await sendPushNotification(
+                            'SRT 예약 성공! 🎉',
+                            `${departure} → ${arrival} (${date} ${departTime})\n예약이 완료되었습니다. 결제를 진행해주세요!`
+                        );
+
                         // 예약 완료 후 브라우저 종료
                         reservationJob.isRunning = false;
 
@@ -459,6 +505,33 @@ app.post('/api/cancel', async (req, res) => {
     }
 
     res.json({ message: '예약 작업이 취소되었습니다.' });
+});
+
+// 푸시 구독 엔드포인트
+app.post('/api/subscribe', (req, res) => {
+    const subscription = req.body;
+    pushSubscriptions.push(subscription);
+    console.log('새로운 푸시 구독 추가됨');
+    res.status(201).json({ message: '구독 완료' });
+});
+
+// VAPID 키 조회 엔드포인트 (클라이언트용)
+app.get('/api/vapid-key', (req, res) => {
+    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+// 테스트 알림 전송 엔드포인트
+app.post('/api/test-notification', async (req, res) => {
+    try {
+        await sendPushNotification(
+            '테스트 알림 🔔',
+            '이것은 테스트 알림입니다! 예약 성공 시 이렇게 알림이 옵니다.'
+        );
+        res.json({ message: '테스트 알림이 전송되었습니다.' });
+    } catch (error) {
+        console.error('테스트 알림 오류:', error);
+        res.status(500).json({ error: '알림 전송 실패' });
+    }
 });
 
 // 서버 시작

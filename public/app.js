@@ -217,8 +217,126 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// VAPID 키 변환 함수
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// 서비스 워커 등록 및 푸시 알림 설정
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker 등록 성공:', registration);
+
+            const notifyBtn = document.getElementById('notifyBtn');
+
+            // 알림 권한 확인
+            if (Notification.permission === 'default') {
+                notifyBtn.style.display = 'block';
+            } else if (Notification.permission === 'granted') {
+                // 이미 허용된 경우 구독 확인/갱신
+                checkSubscription(registration);
+            }
+
+            notifyBtn.addEventListener('click', async () => {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    await subscribeUser(registration);
+                    notifyBtn.style.display = 'none';
+                    document.getElementById('testNotifyBtn').style.display = 'block';
+                }
+            });
+
+            // 이미 구독된 경우 테스트 버튼 표시
+            const subscription = await registration.pushManager.getSubscription();
+            if (subscription) {
+                document.getElementById('testNotifyBtn').style.display = 'block';
+            }
+
+            // 테스트 알림 버튼 이벤트
+            document.getElementById('testNotifyBtn').addEventListener('click', async () => {
+                try {
+                    await fetch('/api/test-notification', { method: 'POST' });
+                    alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
+                } catch (e) {
+                    alert('테스트 알림 전송 실패');
+                }
+            });
+
+        } catch (error) {
+            console.error('Service Worker 등록 실패:', error);
+        }
+    }
+}
+
+// 사용자 구독 함수
+async function subscribeUser(registration) {
+    try {
+        // 서버에서 VAPID 공개키 가져오기
+        const response = await fetch('/api/vapid-key');
+        const data = await response.json();
+        const applicationServerKey = urlBase64ToUint8Array(data.publicKey);
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey
+        });
+
+        console.log('User is subscribed:', subscription);
+
+        // 서버에 구독 정보 전송
+        await fetch('/api/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(subscription),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        alert('알림이 설정되었습니다! 예약 성공 시 알림을 받을 수 있습니다.');
+
+    } catch (err) {
+        console.log('Failed to subscribe the user: ', err);
+        alert('알림 설정 실패: ' + err.message);
+    }
+}
+
+// 구독 상태 확인
+async function checkSubscription(registration) {
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+        console.log('User is already subscribed:', subscription);
+        // 서버에 최신 구독 정보 전송 (갱신)
+        await fetch('/api/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(subscription),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    } else {
+        // 권한은 있지만 구독이 없는 경우
+        await subscribeUser(registration);
+    }
+}
+
 // 페이지 로드 시 초기 상태 확인
 window.addEventListener('load', async () => {
+    // 서비스 워커 등록
+    registerServiceWorker();
+
     try {
         const response = await fetch(`${API_URL}/api/status`);
         const data = await response.json();
