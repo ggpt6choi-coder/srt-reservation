@@ -271,10 +271,16 @@ async function registerServiceWorker() {
             // 항상 토글 표시
             testNotifyToggle.style.display = 'flex';
 
-            // localStorage에서 토글 상태 복원
-            const savedToggleState = localStorage.getItem('testNotifyToggle');
-            if (savedToggleState === 'true' && Notification.permission === 'granted') {
+            // 실제 구독 상태 확인 후 토글 동기화
+            const existingSubscription = await registration.pushManager.getSubscription();
+            if (existingSubscription && Notification.permission === 'granted') {
+                // 구독이 있으면 ON
                 testNotifyCheckbox.checked = true;
+                localStorage.setItem('testNotifyToggle', 'true');
+            } else {
+                // 구독이 없으면 OFF
+                testNotifyCheckbox.checked = false;
+                localStorage.setItem('testNotifyToggle', 'false');
             }
 
             // 토글 변경 이벤트
