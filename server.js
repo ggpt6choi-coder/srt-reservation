@@ -205,7 +205,7 @@ async function runReservation(config) {
                 links.map(link => link.innerText.trim())
             );
 
-            addLog(`헤더 링크 텍스트: ${JSON.stringify(linkTexts)}`);
+            // addLog(`헤더 링크 텍스트: ${JSON.stringify(linkTexts)}`);
 
             // '로그인' 텍스트가 있으면 로그인 실패
             if (linkTexts.some(text => text.includes('로그인'))) {
@@ -256,9 +256,6 @@ async function runReservation(config) {
             await page.selectOption('#dptDt', { value: date });
             addLog('날짜 선택 완료');
             await page.waitForTimeout(1000); // 날짜 선택 후 잠시 대기
-
-
-
         } catch (e) {
             addLog('날짜 선택 실패: ' + e.message);
         }
@@ -294,20 +291,20 @@ async function runReservation(config) {
 
                 // 페이지 로딩 대기 (여러 방법 시도)
                 await Promise.race([
-                    page.waitForLoadState('networkidle', { timeout: 30000 }),
-                    page.waitForTimeout(5000) // 최소 5초 대기
+                    page.waitForLoadState('networkidle', { timeout: 45000 }),
+                    page.waitForTimeout(8000) // 최소 8초 대기 (운영 환경 고려)
                 ]);
 
                 addLog('페이지 로딩 대기 완료');
 
-                // 추가 대기
-                await page.waitForTimeout(2000);
+                // 추가 대기 (운영 환경에서 더 길게)
+                await page.waitForTimeout(3000);
 
                 const rowSelector = '#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr';
 
                 // 테이블이 나타날 때까지 대기 (에러 처리 추가)
                 try {
-                    await page.waitForSelector(rowSelector, { timeout: 30000 });
+                    await page.waitForSelector(rowSelector, { timeout: 45000 });
                     addLog('결과 테이블 발견');
                 } catch (selectorError) {
                     addLog('결과 테이블을 찾을 수 없음. 페이지 상태 확인 중...');
@@ -340,7 +337,7 @@ async function runReservation(config) {
                 for (let i = 0; i < rows.length; i++) {
                     try {
                         const row = rows[i];
-                        const departureTimeEl = await row.$('td:nth-child(4) em');
+                        const departureTimeEl = await row.$('td:nth-child(4) em.time');
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
 
@@ -348,7 +345,6 @@ async function runReservation(config) {
                             if (departureTime && departureTime.trim() === departTime) {
                                 targetRowIndex = i;
                                 addLog(`✅ 매칭 성공! 열차 #${i + 1}`);
-                                break;
                             }
                         }
                     } catch (e) {
