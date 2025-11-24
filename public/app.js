@@ -193,7 +193,11 @@ function updateStatus(data) {
     // 로그 표시
     if (data.logs && data.logs.length > 0) {
         logsDiv.innerHTML = data.logs
-            .map(log => `<div class="log-entry">${escapeHtml(log)}</div>`)
+            .map(log => {
+                // [timestamp] 다음에 줄바꿈 추가
+                const formattedLog = log.replace(/\]/, ']\n');
+                return `<div class="log-entry">${escapeHtml(formattedLog)}</div>`;
+            })
             .join('');
 
         // 자동 스크롤

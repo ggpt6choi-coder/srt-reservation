@@ -273,6 +273,7 @@ h2 {
     color: #e2e8f0;
     margin-bottom: 8px;
     line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .log-entry:last-child {
