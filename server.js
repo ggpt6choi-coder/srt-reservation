@@ -341,7 +341,7 @@ async function runReservation(config) {
                         const departureTimeEl = await row.$('td:nth-child(4) em.time');
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
-                            addLog(`디버깅 ${row}`);
+                            addLog(`디버깅 ${departureTimeEl}`);
                             addLog(`열차 #${i + 1} 출발시간: "${departureTime ? departureTime.trim() : 'null'}"`);
                             if (departureTime && departureTime.trim() === departTime) {
                                 targetRowIndices.push(i);
