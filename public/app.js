@@ -194,9 +194,11 @@ function updateStatus(data) {
     if (data.logs && data.logs.length > 0) {
         logsDiv.innerHTML = data.logs
             .map(log => {
-                // [timestamp] 다음에 줄바꿈 추가
-                const formattedLog = log.replace(/\]/, ']\n');
-                return `<div class="log-entry">${escapeHtml(formattedLog)}</div>`;
+                // HTML 이스케이프 먼저 적용
+                const escaped = escapeHtml(log);
+                // [timestamp] 다음에 <br> 추가
+                const formattedLog = escaped.replace(/\]/, ']<br>');
+                return `<div class="log-entry">${formattedLog}</div>`;
             })
             .join('');
 
