@@ -3,6 +3,24 @@ const API_URL = window.location.origin;
 let statusInterval = null;
 let deferredPrompt = null;
 
+// 히든 기능: 제목 더블클릭 시 회원번호 자동 입력
+document.addEventListener('DOMContentLoaded', () => {
+    const mainTitle = document.getElementById('mainTitle');
+    if (mainTitle) {
+        mainTitle.addEventListener('dblclick', () => {
+            const srtIdInput = document.getElementById('srtId');
+            if (srtIdInput) {
+                srtIdInput.value = '2591441488';
+                // 살짝 애니메이션 효과
+                srtIdInput.style.backgroundColor = '#d1fae5';
+                setTimeout(() => {
+                    srtIdInput.style.backgroundColor = '';
+                }, 500);
+            }
+        });
+    }
+});
+
 // PWA 설치 프롬프트
 window.addEventListener('beforeinstallprompt', (e) => {
     // 기본 설치 배너 방지
@@ -247,37 +265,57 @@ async function registerServiceWorker() {
             console.log('Service Worker 등록 성공:', registration);
 
             const notifyBtn = document.getElementById('notifyBtn');
+            const testNotifyToggle = document.getElementById('testNotifyToggle');
+            const testNotifyCheckbox = document.getElementById('testNotifyCheckbox');
 
-            // 알림 권한 확인
-            if (Notification.permission === 'default') {
-                notifyBtn.style.display = 'block';
-            } else if (Notification.permission === 'granted') {
-                // 이미 허용된 경우 구독 확인/갱신
-                checkSubscription(registration);
+            // 항상 토글 표시
+            testNotifyToggle.style.display = 'flex';
+
+            // localStorage에서 토글 상태 복원
+            const savedToggleState = localStorage.getItem('testNotifyToggle');
+            if (savedToggleState === 'true' && Notification.permission === 'granted') {
+                testNotifyCheckbox.checked = true;
             }
 
-            notifyBtn.addEventListener('click', async () => {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    await subscribeUser(registration);
-                    notifyBtn.style.display = 'none';
-                    document.getElementById('testNotifyBtn').style.display = 'block';
-                }
-            });
+            // 토글 변경 이벤트
+            testNotifyCheckbox.addEventListener('change', async (e) => {
+                if (e.target.checked) {
+                    // 권한 확인
+                    if (Notification.permission === 'denied') {
+                        alert('알림이 차단되어 있습니다.\n\n브라우저 설정에서 알림 권한을 허용해주세요:\n1. 주소창 왼쪽 자물쇠 아이콘 클릭\n2. "알림" 권한을 "허용"으로 변경\n3. 페이지 새로고침');
+                        e.target.checked = false;
+                        localStorage.setItem('testNotifyToggle', 'false');
+                        return;
+                    }
 
-            // 이미 구독된 경우 테스트 버튼 표시
-            const subscription = await registration.pushManager.getSubscription();
-            if (subscription) {
-                document.getElementById('testNotifyBtn').style.display = 'block';
-            }
+                    if (Notification.permission === 'default') {
+                        // 권한 요청
+                        const permission = await Notification.requestPermission();
+                        if (permission !== 'granted') {
+                            e.target.checked = false;
+                            localStorage.setItem('testNotifyToggle', 'false');
+                            return;
+                        }
+                        // 구독 등록
+                        await subscribeUser(registration);
+                    }
 
-            // 테스트 알림 버튼 이벤트
-            document.getElementById('testNotifyBtn').addEventListener('click', async () => {
-                try {
-                    await fetch('/api/test-notification', { method: 'POST' });
-                    alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
-                } catch (e) {
-                    alert('테스트 알림 전송 실패');
+                    // 테스트 알림 전송 (주석 처리)
+                    // try {
+                    //     await fetch('/api/test-notification', { method: 'POST' });
+                    //     alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
+                    //     localStorage.setItem('testNotifyToggle', 'true');
+                    // } catch (err) {
+                    //     alert('테스트 알림 전송 실패');
+                    //     e.target.checked = false;
+                    //     localStorage.setItem('testNotifyToggle', 'false');
+                    // }
+
+                    // 토글 상태만 저장
+                    localStorage.setItem('testNotifyToggle', 'true');
+                } else {
+                    // 토글 끄기
+                    localStorage.setItem('testNotifyToggle', 'false');
                 }
             });
 
