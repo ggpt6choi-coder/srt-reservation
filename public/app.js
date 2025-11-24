@@ -298,6 +298,12 @@ async function registerServiceWorker() {
                         }
                         // 구독 등록
                         await subscribeUser(registration);
+                    } else if (Notification.permission === 'granted') {
+                        // 이미 권한이 있는 경우, 구독 확인 후 없으면 등록
+                        const existingSubscription = await registration.pushManager.getSubscription();
+                        if (!existingSubscription) {
+                            await subscribeUser(registration);
+                        }
                     }
 
                     // 테스트 알림 전송 (주석 처리)
@@ -306,12 +312,12 @@ async function registerServiceWorker() {
                     //     alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
                     //     localStorage.setItem('testNotifyToggle', 'true');
                     // } catch (err) {
-                    //     alert('테스트 알림 전송 실패');
+                    //     alert('테스트 알림 전송 실패: ' + err.message);
                     //     e.target.checked = false;
                     //     localStorage.setItem('testNotifyToggle', 'false');
                     // }
 
-                    // 토글 상태만 저장
+                    // 구독 완료 메시지
                     localStorage.setItem('testNotifyToggle', 'true');
                 } else {
                     // 토글 끄기
