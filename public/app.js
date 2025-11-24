@@ -284,7 +284,9 @@ async function registerServiceWorker() {
             // 항상 토글 표시
             testNotifyToggle.style.display = 'flex';
 
-            // 실제 구독 상태 확인 후 토글 동기화
+            // 실제 구독 상태 확인 및 서버 동기화
+            await checkSubscription(registration);
+
             const existingSubscription = await registration.pushManager.getSubscription();
             if (existingSubscription && Notification.permission === 'granted') {
                 // 구독이 있으면 ON
