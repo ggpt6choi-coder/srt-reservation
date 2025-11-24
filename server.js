@@ -231,7 +231,7 @@ async function runReservation(config) {
         }
 
         // 출발역 선택
-        addLog(`출발역 선택: ${departure}`);
+        addLog(`✅ 출발역 선택: ${departure}`);
         await page.click('#dptRsStnCdNm');
         await page.keyboard.press(selectAllKey);
         await page.keyboard.press('Backspace');
@@ -241,7 +241,7 @@ async function runReservation(config) {
         await page.waitForTimeout(500);
 
         // 도착역 선택
-        addLog(`도착역 선택: ${arrival}`);
+        addLog(`✅ 도착역 선택: ${arrival}`);
         await page.click('#arvRsStnCdNm');
         await page.keyboard.press(selectAllKey);
         await page.keyboard.press('Backspace');
@@ -251,17 +251,16 @@ async function runReservation(config) {
         await page.waitForTimeout(500);
 
         // 날짜 선택
-        addLog(`날짜 설정: ${date}`);
         try {
             await page.selectOption('#dptDt', { value: date });
-            addLog('날짜 선택 완료');
+            addLog(`✅ 날짜 선택 완료 : ${date}`);
             await page.waitForTimeout(1000); // 날짜 선택 후 잠시 대기
         } catch (e) {
-            addLog('날짜 선택 실패: ' + e.message);
+            addLog(`❌ 날짜 선택 실패 : ${date}` + e.message);
         }
 
         // 시간 선택
-        addLog(`시간대 선택: ${time}`);
+        addLog(`✅ 시간대 선택: ${time}시`);
         const hour = time.substring(0, 2);
         const timeValue = `${hour}0000`;
 
@@ -276,7 +275,7 @@ async function runReservation(config) {
         }
 
         // 3. 예약 반복 루프
-        addLog(`${departTime} 열차 검색`);
+        addLog(`✅ ${departTime} 열차 검색`);
         reservationJob.status = `${departTime} 열차 검색 중...`;
         let attemptCount = 0;
 
@@ -305,7 +304,6 @@ async function runReservation(config) {
                 // 테이블이 나타날 때까지 대기 (에러 처리 추가)
                 try {
                     await page.waitForSelector(rowSelector, { timeout: 45000 });
-                    addLog('결과 테이블 발견');
                 } catch (selectorError) {
                     addLog('결과 테이블을 찾을 수 없음. 페이지 상태 확인 중...');
 
@@ -335,7 +333,7 @@ async function runReservation(config) {
                 // 원하는 출발 시간의 열차 찾기 (배열로 모두 수집)
                 const targetRowIndices = [];
                 const trainTimes = []; // 모든 열차 시간 수집
-                addLog(`🚂찾는 시간: "${departTime}"`);
+                addLog(`🚂 찾는 시간: "${departTime}"`);
 
                 for (let i = 0; i < rows.length; i++) {
                     try {
@@ -343,6 +341,8 @@ async function runReservation(config) {
                         // 4번째 td의 em.time만 선택 (출발시간)
                         const departureCell = await row.$('td:nth-child(4)');
                         const departureTimeEl = departureCell ? await departureCell.$('em.time') : null;
+                        addLog(`테스트 #${i + 1}: ${departureCell}`);
+                        addLog(`테스트 #${i + 1}: ${departureTimeEl}`);
 
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
