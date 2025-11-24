@@ -20,11 +20,16 @@
 <body>
     <div class="container">
         <header>
-            <h1>🚄 SRT 자동 예약</h1>
+            <h1 id="mainTitle">🚄 SRT 자동 예약</h1>
             <p class="subtitle">매진된 열차도 자동으로 예약해드립니다</p>
             <button id="notifyBtn" class="notify-btn" style="display: none;">🔔 알림 켜기</button>
-            <button id="testNotifyBtn" class="notify-btn" style="display: none; background-color: #48bb78;">🔔 테스트 알림
-                보내기</button>
+            <div id="testNotifyToggle" class="toggle-container" style="display: none;">
+                <label class="toggle-label">
+                    <input type="checkbox" id="testNotifyCheckbox">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">테스트 알림</span>
+                </label>
+            </div>
         </header>
 
         <div class="card">
