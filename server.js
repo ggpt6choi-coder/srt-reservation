@@ -53,7 +53,13 @@ let pushSubscriptions = [];
 
 // 푸시 알림 전송 함수
 async function sendPushNotification(title, body) {
-    if (pushSubscriptions.length === 0) return;
+    console.log(`[푸시] 알림 전송 시도: ${title}`);
+    console.log(`[푸시] 구독자 수: ${pushSubscriptions.length}`);
+
+    if (pushSubscriptions.length === 0) {
+        console.log('[푸시] ❌ 구독자가 없어 알림을 보낼 수 없습니다.');
+        return;
+    }
 
     const notificationPayload = JSON.stringify({ title, body });
     const promises = [];
