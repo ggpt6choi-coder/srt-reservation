@@ -313,15 +313,15 @@ async function registerServiceWorker() {
                     }
 
                     // 테스트 알림 전송 (주석 처리)
-                    // try {
-                    //     await fetch('/api/test-notification', { method: 'POST' });
-                    //     alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
-                    //     localStorage.setItem('testNotifyToggle', 'true');
-                    // } catch (err) {
-                    //     alert('테스트 알림 전송 실패: ' + err.message);
-                    //     e.target.checked = false;
-                    //     localStorage.setItem('testNotifyToggle', 'false');
-                    // }
+                    try {
+                        await fetch('/api/test-notification', { method: 'POST' });
+                        alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
+                        localStorage.setItem('testNotifyToggle', 'true');
+                    } catch (err) {
+                        alert('테스트 알림 전송 실패: ' + err.message);
+                        e.target.checked = false;
+                        localStorage.setItem('testNotifyToggle', 'false');
+                    }
 
                     // 구독 완료 메시지
                     localStorage.setItem('testNotifyToggle', 'true');
