@@ -312,10 +312,18 @@ async function registerServiceWorker() {
                         }
                     }
 
-                    // 테스트 알림 전송 (주석 처리)
+                    // 테스트 알림 전송
                     try {
                         await fetch('/api/test-notification', { method: 'POST' });
-                        alert('테스트 알림을 보냈습니다! (5초 내에 도착해야 합니다)');
+
+                        // 디버그 정보 표시
+                        const debugInfo = `✅ 구독 완료!\n\n` +
+                            `권한: ${Notification.permission}\n` +
+                            `Service Worker: ${navigator.serviceWorker.controller ? '등록됨' : '미등록'}\n` +
+                            `구독: 완료\n\n` +
+                            `테스트 알림을 보냈습니다.\n5초 내에 도착해야 합니다.`;
+
+                        alert(debugInfo);
                         localStorage.setItem('testNotifyToggle', 'true');
                     } catch (err) {
                         alert('테스트 알림 전송 실패: ' + err.message);
@@ -323,8 +331,6 @@ async function registerServiceWorker() {
                         localStorage.setItem('testNotifyToggle', 'false');
                     }
 
-                    // 구독 완료 메시지
-                    localStorage.setItem('testNotifyToggle', 'true');
                 } else {
                     // 토글 끄기
                     localStorage.setItem('testNotifyToggle', 'false');
