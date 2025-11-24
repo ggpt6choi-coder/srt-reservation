@@ -109,7 +109,7 @@ function addLog(message) {
     });
     const logEntry = {
         timestamp: Date.now(),
-        message: `[${timestamp}]\n${message}`
+        message: `[${timestamp}]${message}`
     };
     reservationJob.logs.push(logEntry);
     console.log(logEntry.message);
@@ -170,7 +170,7 @@ async function runReservation(config) {
         reservationJob.status = '브라우저 시작 중...';
         addLog('예약 프로세스 시작');
 
-        const isHeadless = true;
+        const isHeadless = false;
         reservationJob.browser = await chromium.launch({ headless: isHeadless });
         reservationJob.context = await reservationJob.browser.newContext();
         reservationJob.page = await reservationJob.context.newPage();
@@ -255,6 +255,10 @@ async function runReservation(config) {
         try {
             await page.selectOption('#dptDt', { value: date });
             addLog('날짜 선택 완료');
+            await page.waitForTimeout(1000); // 날짜 선택 후 잠시 대기
+
+
+
         } catch (e) {
             addLog('날짜 선택 실패: ' + e.message);
         }
@@ -321,7 +325,15 @@ async function runReservation(config) {
                 const rows = await page.$$(rowSelector);
                 addLog(`${rows.length}개의 열차 발견`);
 
-                let targetRowIndex = -1;
+                // 디버깅: 현재 조회된 날짜/구간 정보 확인
+                try {
+                    const infoText = await page.$eval('#result-form .tbl_top h4', el => el.innerText);
+                    addLog(`현재 조회 정보: ${infoText.trim()}`);
+                } catch (e) {
+                    addLog('조회 정보 텍스트를 찾을 수 없음');
+                }
+
+
 
                 // 원하는 출발 시간의 열차 찾기
                 addLog(`찾는 시간: "${departTime}"`);
@@ -331,6 +343,7 @@ async function runReservation(config) {
                         const departureTimeEl = await row.$('td:nth-child(4) em');
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
+
                             addLog(`열차 #${i + 1} 출발시간: "${departureTime ? departureTime.trim() : 'null'}"`);
                             if (departureTime && departureTime.trim() === departTime) {
                                 targetRowIndex = i;
