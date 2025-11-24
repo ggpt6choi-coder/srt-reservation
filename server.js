@@ -334,24 +334,36 @@ async function runReservation(config) {
 
                 // 원하는 출발 시간의 열차 찾기 (배열로 모두 수집)
                 const targetRowIndices = [];
-                addLog(`찾는 시간: "${departTime}"`);
+                const trainTimes = []; // 모든 열차 시간 수집
+                addLog(`🚂찾는 시간: "${departTime}"`);
+
                 for (let i = 0; i < rows.length; i++) {
                     try {
                         const row = rows[i];
-                        const departureTimeEl = await row.$('td:nth-child(4) em.time');
+                        // 4번째 td의 em.time만 선택 (출발시간)
+                        const departureCell = await row.$('td:nth-child(4)');
+                        const departureTimeEl = departureCell ? await departureCell.$('em.time') : null;
+
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
-                            addLog(`디버깅 ${departureTimeEl}`);
-                            addLog(`열차 #${i + 1} 출발시간: "${departureTime ? departureTime.trim() : 'null'}"`);
-                            if (departureTime && departureTime.trim() === departTime) {
+                            const trimmedTime = departureTime ? departureTime.trim() : 'null';
+
+                            trainTimes.push(`#${i + 1}: ${trimmedTime}`);
+
+                            if (departureTime && trimmedTime === departTime) {
                                 targetRowIndices.push(i);
-                                addLog(`✅ 매칭 성공! 열차 #${i + 1}`);
                             }
                         }
                     } catch (e) {
                         addLog('요소 접근 중 오류, 재시도');
                         break;
                     }
+                }
+
+                // 모든 열차 시간을 한 번에 로그
+                addLog(`검색된 열차: ${trainTimes.join(', ')}`);
+                if (targetRowIndices.length > 0) {
+                    addLog(`✅ 매칭 성공! 열차 ${targetRowIndices.map(idx => `#${idx + 1}`).join(', ')}`);
                 }
 
                 if (targetRowIndices.length > 0) {
