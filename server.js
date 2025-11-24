@@ -413,7 +413,7 @@ async function runReservation(config) {
                             });
 
                             addLog('🥳예약이 완료! SRT 앱에서 결제를 완료해주세요.');
-                            reservationJob.status = '🥳예약 완료! SRT 앱에서 결제를 완료하세요.';
+                            reservationJob.status = '🥳예약 완료!<br/>SRT 앱에서 결제를 완료하세요.';
 
                             // 텔레그램 알림 전송
                             await sendTelegramMessage(
