@@ -130,6 +130,7 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
             alert('예약 작업이 시작되었습니다!');
             document.getElementById('startBtn').disabled = true;
             document.getElementById('cancelBtn').disabled = false;
+            document.getElementById('appPassword').value = '';
 
             // 상태 폴링 시작
             startStatusPolling();
@@ -320,31 +321,31 @@ async function registerServiceWorker() {
                         // 구독 등록
                         await subscribeUser(registration);
                     } else if (Notification.permission === 'granted') {
-                        // 이미 권한이 있는 경우, 구독 확인 후 없으면 등록
+                        // 이미 권한이 있는 경우
                         const existingSubscription = await registration.pushManager.getSubscription();
                         if (!existingSubscription) {
+                            // 브라우저 구독이 없으면 새로 구독
                             await subscribeUser(registration);
+                        } else {
+                            // 브라우저 구독이 있어도 서버에 다시 전송 (중요!)
+                            console.log('기존 구독 정보 서버에 재전송');
+                            await fetch('/api/subscribe', {
+                                method: 'POST',
+                                body: JSON.stringify(existingSubscription),
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
                         }
                     }
 
-                    // 테스트 알림 전송
-                    try {
-                        await fetch('/api/test-notification', { method: 'POST' });
+                    // 디버그 정보 및 성공 메시지
+                    const debugInfo = `✅ 알림 설정 완료!\n\n` +
+                        `서버에 등록되었습니다.\n` +
+                        `예약이 성공하면 알림을 보내드립니다.`;
 
-                        // 디버그 정보 표시
-                        const debugInfo = `✅ 구독 완료!\n\n` +
-                            `권한: ${Notification.permission}\n` +
-                            `Service Worker: ${navigator.serviceWorker.controller ? '등록됨' : '미등록'}\n` +
-                            `구독: 완료\n\n` +
-                            `테스트 알림을 보냈습니다.\n5초 내에 도착해야 합니다.`;
-
-                        alert(debugInfo);
-                        localStorage.setItem('testNotifyToggle', 'true');
-                    } catch (err) {
-                        alert('테스트 알림 전송 실패: ' + err.message);
-                        e.target.checked = false;
-                        localStorage.setItem('testNotifyToggle', 'false');
-                    }
+                    alert(debugInfo);
+                    localStorage.setItem('testNotifyToggle', 'true');
 
                 } else {
                     // 토글 끄기

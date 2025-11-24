@@ -67,10 +67,15 @@ async function sendPushNotification(title, body) {
     pushSubscriptions.forEach((subscription, index) => {
         promises.push(
             webPush.sendNotification(subscription, notificationPayload)
+                .then(response => {
+                    console.log(`[푸시] 전송 성공 (상태코드: ${response.statusCode})`);
+                })
                 .catch(err => {
-                    console.error('푸시 전송 실패:', err);
+                    console.error('[푸시] 전송 실패 상세:', err);
+                    console.error('[푸시] 에러 코드:', err.statusCode);
+
                     if (err.statusCode === 410 || err.statusCode === 404) {
-                        // 만료된 구독 제거
+                        console.log('[푸시] 만료된 구독 제거함');
                         pushSubscriptions.splice(index, 1);
                     }
                 })
