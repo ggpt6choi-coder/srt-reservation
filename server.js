@@ -256,7 +256,21 @@ async function runReservation(config) {
             addLog(`✅ 날짜 선택 완료 : ${date}`);
             await page.waitForTimeout(1000); // 날짜 선택 후 잠시 대기
         } catch (e) {
-            addLog(`❌ 날짜 선택 실패 : ${date}` + e.message);
+            addLog(`❌ 날짜 선택 실패 : ${date} - ${e.message}`);
+            reservationJob.status = '날짜 선택 실패';
+            reservationJob.isRunning = false;
+
+            // 텔레그램 알림
+            await sendTelegramMessage(
+                `❌ <b>SRT 날짜 선택 실패</b>\n\n` +
+                `날짜: ${date}\n` +
+                `오류: ${e.message}\n\n` +
+                `날짜를 확인하고 다시 시도해주세요.`
+            );
+
+            // 브라우저 종료
+            if (reservationJob.browser) await reservationJob.browser.close();
+            return; // 실행 중단
         }
 
         // 시간 선택
@@ -341,8 +355,6 @@ async function runReservation(config) {
                         // 4번째 td의 em.time만 선택 (출발시간)
                         const departureCell = await row.$('td:nth-child(4)');
                         const departureTimeEl = departureCell ? await departureCell.$('em.time') : null;
-                        addLog(`테스트 #${i + 1}: ${departureCell}`);
-                        addLog(`테스트 #${i + 1}: ${departureTimeEl}`);
 
                         if (departureTimeEl) {
                             const departureTime = await departureTimeEl.textContent();
