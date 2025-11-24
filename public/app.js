@@ -261,7 +261,20 @@ function urlBase64ToUint8Array(base64String) {
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
-            const registration = await navigator.serviceWorker.register('/sw.js');
+            // 기존 Service Worker 제거 후 재등록
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+                await registration.unregister();
+            }
+
+            // 새로 등록 (캐시 무시)
+            const registration = await navigator.serviceWorker.register('/sw.js', {
+                updateViaCache: 'none'
+            });
+
+            // 즉시 업데이트 확인
+            await registration.update();
+
             console.log('Service Worker 등록 성공:', registration);
 
             const notifyBtn = document.getElementById('notifyBtn');
