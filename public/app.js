@@ -10,6 +10,21 @@ document.addEventListener('DOMContentLoaded', () => {
         mainTitle.addEventListener('dblclick', () => {
             const srtIdInput = document.getElementById('srtId');
             if (srtIdInput) {
+                srtIdInput.value = '2193346529';
+                // 살짝 애니메이션 효과
+                srtIdInput.style.backgroundColor = '#d1fae5';
+                setTimeout(() => {
+                    srtIdInput.style.backgroundColor = '';
+                }, 500);
+            }
+        });
+    }
+
+    const mainTitle2 = document.getElementById('mainTitle2');
+    if (mainTitle2) {
+        mainTitle2.addEventListener('dblclick', () => {
+            const srtIdInput = document.getElementById('srtId');
+            if (srtIdInput) {
                 srtIdInput.value = '2591441488';
                 // 살짝 애니메이션 효과
                 srtIdInput.style.backgroundColor = '#d1fae5';
