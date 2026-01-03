@@ -10,14 +10,8 @@ async function run() {
     const isHeadless = true;
 
     const browser = await chromium.launch({ headless: isHeadless });
-    // 화면녹화 (필요시 주석 해제)
-    // const context = await browser.newContext({
-    //     recordVideo: {
-    //         dir: './videos/',
-    //         size: { width: 1280, height: 720 }
-    //     }
-    // });
-    const context = await browser.newContext();
+    const context = await browser.newContext(); // 화면 녹화 대신 Tracing 사용
+
     const page = await context.newPage();
 
     const { SRT_ID, SRT_PW, DEPARTURE, ARRIVAL, DATE, TIME } = process.env;
@@ -133,6 +127,9 @@ async function run() {
             if (targetRowIndex !== -1) {
                 console.log(`${process.env.DEPART_TIME} 출발 열차 발견. 예약 가능 여부 확인 중...`);
 
+                // Tracing 시작 (스냅샷, 스크린샷 포함)
+                await context.tracing.start({ screenshots: true, snapshots: true });
+
                 // 인덱스로 다시 요소 가져오기 (페이지가 변경될 수 있으므로)
                 const currentRows = await page.$$(rowSelector);
                 targetRow = currentRows[targetRowIndex];
@@ -143,22 +140,58 @@ async function run() {
 
                 if (reserveText.includes('예약하기')) {
                     console.log('좌석 예약 가능! 예약 시도 중...');
+
+                    // 팝업 메시지 감지용 변수
+                    let dialogMessage = null;
+                    const dialogHandler = async dialog => {
+                        dialogMessage = dialog.message();
+                        console.log(`팝업 감지: ${dialogMessage}`);
+                        await dialog.accept();
+                    };
+                    page.on('dialog', dialogHandler);
+
                     await reserveBtn.click();
 
-                    // 팝업 알림 자동 수락
-                    page.on('dialog', async dialog => {
-                        console.log(`팝업 메시지: ${dialog.message()}`);
-                        await dialog.accept();
-                    });
+                    // 클릭 후 잠시 대기
+                    await page.waitForTimeout(2000);
 
-                    console.log('예약 버튼 클릭 완료. 브라우저에서 결제를 완료하세요.');
+                    // 리스너 제거
+                    page.removeListener('dialog', dialogHandler);
 
-                    break;
+                    // 1. 실패 팝업 확인
+                    if (dialogMessage && (dialogMessage.includes('잔여석없음') || dialogMessage.includes('매진') || dialogMessage.includes('오류'))) {
+                        console.log(`❌ 예약 실패 (팝업): ${dialogMessage}`);
+                        continue; // 루프 계속
+                    }
+
+                    // 2. 페이지 이동 확인
+                    const currentUrl = page.url();
+                    if (currentUrl.includes('selectListDtl.do') || currentUrl.includes('confirmReservationInfo.do')) {
+                        console.log('🥳 예약 성공! 결제 페이지로 이동했습니다.');
+                        console.log('브라우저에서 결제를 완료하세요.');
+
+                        // 성공 시 Trace 저장
+                        const tracePath = `./traces/success_${Date.now()}.zip`;
+                        await context.tracing.stop({ path: tracePath });
+                        console.log(`✅ 예약 성공 순간이 녹화되었습니다: ${tracePath}`);
+                        console.log('확인 방법: npx playwright show-trace ' + tracePath);
+
+                        break;
+                    } else {
+                        console.log(`⚠️ 예약 확인 실패: 페이지가 이동하지 않음. (URL: ${currentUrl})`);
+                        if (dialogMessage) console.log(`마지막 팝업 메시지: ${dialogMessage}`);
+                        // 재시도
+                        await context.tracing.stop(); // 실패 시 저장하지 않음
+                    }
                 } else if (reserveText.includes('매진')) {
                     console.log('매진 상태. 재시도 중...');
                 } else {
                     console.log(`상태: ${reserveText}. 재시도 중...`);
                 }
+
+                // 루프 돌면서 Tracing이 켜져있을 수 있으므로 안전하게 중지 (저장 X)
+                try { await context.tracing.stop(); } catch (e) { }
+
             } else {
                 console.log(`${process.env.DEPART_TIME} 출발 열차를 찾을 수 없습니다. 재시도 중...`);
             }
@@ -172,7 +205,6 @@ async function run() {
         await page.close();
         await context.close();
         await browser.close();
-        console.log('녹화 영상이 ./videos/ 폴더에 저장되었습니다.');
 
     } catch (e) {
         console.error('오류 발생:', e);
