@@ -181,7 +181,7 @@ async function runReservation(config) {
         reservationJob.status = '브라우저 시작 중...';
         addLog('예약 프로세스 시작');
 
-        const isHeadless = true;
+        const isHeadless = false;
         reservationJob.browser = await chromium.launch({ headless: isHeadless });
         reservationJob.context = await reservationJob.browser.newContext();
         reservationJob.page = await reservationJob.context.newPage();
@@ -301,7 +301,9 @@ async function runReservation(config) {
 
         // 3. 예약 반복 루프
         addLog(`✅ ${departTime} 열차 검색`);
-        reservationJob.status = `${departTime} 열차 검색 중...`;
+        // 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
+        const formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+        reservationJob.status = `${formattedDate} ${departTime} 열차 검색 중...`;
         let attemptCount = 0;
 
         while (reservationJob.isRunning) {
@@ -403,50 +405,73 @@ async function runReservation(config) {
 
                         if (reserveText.includes('예약하기')) {
                             addLog(`좌석 예약 가능! (열차 #${rowIndex + 1}) 예약 시도 중...`);
-                            reservationJob.status = '예약 중...';
+                            reservationJob.status = '예약 시도 중...';
+
+                            // 팝업 메시지 감지용 변수
+                            let dialogMessage = null;
+                            const dialogHandler = async dialog => {
+                                dialogMessage = dialog.message();
+                                addLog(`팝업 감지: ${dialogMessage}`);
+                                await dialog.accept();
+                            };
+                            page.on('dialog', dialogHandler);
 
                             await reserveBtn.click();
 
-                            page.on('dialog', async dialog => {
-                                addLog(`팝업: ${dialog.message()}`);
-                                await dialog.accept();
-                            });
-
-                            addLog('🥳예약이 완료! SRT 앱에서 결제를 완료해주세요.');
-                            reservationJob.status = '🥳예약 완료!<br/>SRT 앱에서 결제를 완료하세요.';
-
-                            // 텔레그램 알림 전송
-                            await sendTelegramMessage(
-                                `🎉 <b>SRT 예약 완료!</b>\n\n` +
-                                `출발: ${departure} → ${arrival}\n` +
-                                `날짜: ${date}\n` +
-                                `시간: ${departTime}\n\n` +
-                                `SRT 앱에서 결제를 완료해주세요! 💳`
-                            );
-
-                            // 푸시 알림 전송
-                            await sendPushNotification(
-                                'SRT 예약 성공! 🎉',
-                                `${departure} → ${arrival} (${date} ${departTime})\n예약이 완료되었습니다. 결제를 진행해주세요!`
-                            );
-
-                            // 예약 완료 후 브라우저 종료
-                            reservationJob.isRunning = false;
-
-                            // 잠시 대기 후 브라우저 종료
+                            // 클릭 후 잠시 대기 (팝업이나 페이지 이동 기다림)
                             await page.waitForTimeout(2000);
 
-                            try {
-                                if (reservationJob.page) await reservationJob.page.close();
-                                if (reservationJob.context) await reservationJob.context.close();
-                                if (reservationJob.browser) await reservationJob.browser.close();
-                                addLog('브라우저 종료 완료');
-                            } catch (closeError) {
-                                addLog('브라우저 종료 중 오류: ' + closeError.message);
+                            // 팝업 리스너 제거
+                            page.removeListener('dialog', dialogHandler);
+
+                            // 1. 실패 팝업 확인
+                            if (dialogMessage && (dialogMessage.includes('잔여석없음') || dialogMessage.includes('매진') || dialogMessage.includes('오류'))) {
+                                addLog(`❌ 예약 실패 (팝업): ${dialogMessage}`);
+                                continue; // 다음 열차 시도
                             }
 
-                            reservationSuccess = true;
-                            break; // 예약 성공했으면 루프 종료
+                            // 2. 페이지 이동 확인 (결제 페이지 URL 등)
+                            const currentUrl = page.url();
+                            if (currentUrl.includes('selectListDtl.do') || currentUrl.includes('confirmReservationInfo.do')) {
+                                // 성공 케이스
+                                addLog('🥳 예약 성공 확인! (결제 페이지 진입)');
+                                // 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
+                                const formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+                                reservationJob.status = `🥳예약 완료! (${formattedDate} ${departTime})<br/>SRT 앱에서 결제를 완료하세요.`;
+
+                                // 텔레그램 알림 전송
+                                await sendTelegramMessage(
+                                    `🎉 <b>SRT 예약 완료!</b>\n\n` +
+                                    `출발: ${departure} → ${arrival}\n` +
+                                    `날짜: ${date}\n` +
+                                    `시간: ${departTime}\n\n` +
+                                    `SRT 앱에서 결제를 완료해주세요! 💳`
+                                );
+
+                                // 푸시 알림 전송
+                                await sendPushNotification(
+                                    'SRT 예약 성공! 🎉',
+                                    `${departure} → ${arrival} (${date} ${departTime})\n예약이 완료되었습니다. 결제를 진행해주세요!`
+                                );
+
+                                reservationJob.isRunning = false;
+                                await page.waitForTimeout(2000);
+
+                                try {
+                                    if (reservationJob.page) await reservationJob.page.close();
+                                    if (reservationJob.context) await reservationJob.context.close();
+                                    if (reservationJob.browser) await reservationJob.browser.close();
+                                } catch (closeError) { }
+
+                                reservationSuccess = true;
+                                break;
+                            } else {
+                                // 페이지가 안 바뀌었으면 실패로 간주
+                                addLog(`⚠️ 예약 확인 실패: 페이지가 이동하지 않음. (URL: ${currentUrl})`);
+                                if (dialogMessage) addLog(`마지막 팝업 메시지: ${dialogMessage}`);
+                                // 계속 재시도
+                            }
+
                         } else {
                             addLog(`열차 #${rowIndex + 1}: ${reserveText}`);
                         }
@@ -454,7 +479,7 @@ async function runReservation(config) {
 
                     if (!reservationSuccess) {
                         reservationJob.status = `매진 상태 (시도 #${attemptCount})`;
-                        addLog('모든 열차 매진 상태, 재시도 중...');
+                        addLog('예약 실패 또는 매진, 재시도 중...');
                     } else {
                         break; // 예약 성공했으면 while 루프 종료
                     }
