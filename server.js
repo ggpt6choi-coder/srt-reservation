@@ -478,7 +478,7 @@ async function runReservation(config) {
                     }
 
                     if (!reservationSuccess) {
-                        reservationJob.status = `${formattedDate} ${departTime} 매진 상태 (시도 #${attemptCount})`;
+                        reservationJob.status = `${formattedDate} ${departTime}\n매진 상태 (시도 #${attemptCount})`;
                         addLog('예약 실패 또는 매진, 재시도 중...');
                     } else {
                         break; // 예약 성공했으면 while 루프 종료
